@@ -1,7 +1,7 @@
 <script>
-  import Chart from 'chart.js/auto';
   import { goto } from '$app/navigation';
-  import { mainPageCsvDataStore, mainPageChartsStore } from '$lib/store';
+  import Chart from 'chart.js/auto';
+  import { eventPageCsvDataStore, eventPageChartsStore } from '$lib/store';
   import { onDestroy, onMount } from 'svelte';
 
   let csvData = [];
@@ -9,11 +9,11 @@
   let chartsContainer;
   let maintainAspectRatio = true;
 
-  mainPageCsvDataStore.subscribe(value => {
+  eventPageCsvDataStore.subscribe(value => {
     csvData = value;
   });
 
-  mainPageChartsStore.subscribe(value => {
+  eventPageChartsStore.subscribe(value => {
     charts = value;
   });
 
@@ -34,7 +34,7 @@
     if (file) {
       const text = await file.text();
       csvData = await parseCSV(text);
-      mainPageCsvDataStore.set(csvData);
+      eventPageCsvDataStore.set(csvData);
     }
   }
 
@@ -99,22 +99,23 @@
             x: { title: { display: true, text: 'Time' } },
             y: { title: { display: true, text: header } }
           }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          }
         }
       });
 
       charts.push(chart);
     }
 
-    mainPageChartsStore.set(charts);
+    eventPageChartsStore.set(charts);
   }
 
   function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
+    return '#' + Math.floor(Math.random() * 16777215).toString(16);
   }
 
   function toggleAspectRatio() {
@@ -122,8 +123,8 @@
     createCharts();
   }
 
-  function goToSecondPage() {
-    goto('/eventPage');
+  function goToMainPage() {
+    goto('/');
   }
 
   onDestroy(() => {
@@ -137,35 +138,23 @@
       Toggle Aspect Ratio
     </button>
   </div>
-  <h1 class="text-3xl font-bold text-gray-800 mb-6">📊 Upload and Visualize Data CSV</h1>
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">📊 Second Page - Upload Events CSV </h1>
 
   <form class="bg-white shadow-lg rounded-lg p-6 w-full max-w-md" onsubmit={e => e.preventDefault()}>
     <div class="mb-4">
       <label class="block text-sm font-semibold text-gray-700 mb-2" for="csvFile">
-        Upload your file 'data.csv'
+        Upload your file 'event.csv'
       </label>
-      <input
-        onchange={handleFileChange}
-        class="w-full px-3 py-2 border rounded-lg shadow-sm focus:ring focus:ring-blue-300 focus:border-blue-500"
-        id="csvFile"
-        type="file"
-        name="csvFile"
-        accept=".csv"
-      />
+      <input onchange={handleFileChange} class="w-full px-3 py-2 border rounded-lg shadow-sm" id="csvFile" type="file" name="csvFile" accept=".csv"/>
     </div>
-    <button
-      onclick={createCharts}
-      class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-      type="submit"
-    >
+    <button onclick={createCharts} class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">
       📤 Send and Generate Plots
     </button>
   </form>
 
   <div bind:this={chartsContainer} class="w-full max-w-4xl mt-8 space-y-6"></div>
 
-  <button onclick={goToSecondPage}
-    class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-    ➡️ Go to Second Page
+  <button onclick={goToMainPage} class="mt-4 bg-red-500 text-white font-bold py-2 px-4 rounded-lg">
+    ⬅️ Back to Data Page
   </button>
 </div>
