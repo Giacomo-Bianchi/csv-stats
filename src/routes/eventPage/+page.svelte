@@ -117,7 +117,7 @@
   });
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex flex-col items-center py-12 px-6">
+<div class="min-h-screen bg-gradient-to-br from-green-300 to-purple-400 flex flex-col items-center py-12 px-6">
   <div class="w-full flex justify-end mb-6">
     <button onclick={toggleAspectRatio} class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-xl shadow-md transition duration-200">
       🔄 Toggle Aspect Ratio
@@ -141,4 +141,4 @@
   </div>
 
   <div bind:this={chartsContainer} class="w-full max-w-6xl mt-10 space-y-8"></div>
-</div>  
+</div>
