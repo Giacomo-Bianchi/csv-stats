@@ -1,7 +1,7 @@
 <script>
-  import { goto } from '$app/navigation';
   import Chart from 'chart.js/auto';
-  import { eventPageCsvDataStore, eventPageChartsStore } from '$lib/store';
+  import { goto } from '$app/navigation';
+  import { dataPageCsvDataStore, dataPageChartsStore } from '$lib/store';
   import { onDestroy, onMount } from 'svelte';
 
   let csvData = [];
@@ -9,11 +9,11 @@
   let chartsContainer;
   let maintainAspectRatio = true;
 
-  eventPageCsvDataStore.subscribe(value => {
+  dataPageCsvDataStore.subscribe(value => {
     csvData = value;
   });
 
-  eventPageChartsStore.subscribe(value => {
+  dataPageChartsStore.subscribe(value => {
     charts = value;
   });
 
@@ -47,7 +47,7 @@
       const values = csvData.map(row => parseFloat(row[header]));
 
       const chartCard = document.createElement('div');
-      chartCard.className = 'bg-white p-6 rounded-xl shadow-lg border border-gray-300 mb-6';
+      chartCard.className = 'bg-white p-6 rounded-2xl shadow-lg mb-6';
 
       const chartCanvas = document.createElement('canvas');
       chartCard.appendChild(chartCanvas);
@@ -61,8 +61,9 @@
             label: header,
             data: values,
             borderColor: getRandomColor(),
-            backgroundColor: 'rgba(0, 123, 255, 0.1)',
-            fill: true
+            backgroundColor: 'rgba(0, 123, 255, 0.2)',
+            fill: true,
+            borderWidth: 2
           }]
         },
         options: {
@@ -88,11 +89,11 @@
       charts.push(chart);
     }
 
-    eventPageChartsStore.set(charts);
+    dataPageChartsStore.set(charts);
   }
 
   function getRandomColor() {
-    return '#' + Math.floor(Math.random() * 16777215).toString(16);
+    return `hsl(${Math.random() * 360}, 100%, 60%)`;
   }
 
   function toggleAspectRatio() {
@@ -104,8 +105,8 @@
     goto('/');
   }
 
-  function goToDataPage() {
-    goto('/dataPage');
+  function goToEventPage() {
+    goto('/eventPage');
   }
 
   function loadCharts() {
@@ -117,20 +118,20 @@
   });
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex flex-col items-center py-12 px-6">
+<div class="min-h-screen bg-gradient-to-br from-blue-100 to-gray-200 flex flex-col items-center py-12 px-6">
   <div class="w-full flex justify-end mb-6">
     <button onclick={toggleAspectRatio} class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-xl shadow-md transition duration-200">
       🔄 Toggle Aspect Ratio
     </button>
   </div>
-  <h1 class="text-4xl font-extrabold text-gray-900 mb-8">📊 Event CSV & Graphs</h1>
+  <h1 class="text-4xl font-extrabold text-gray-800 mb-8">📊 Data CSV & Graphs</h1>
 
   <div class="flex space-x-4">
     <button onclick={goToMainPage} class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
       ⬅️ Back to Main Page
     </button>
-    <button onclick={goToDataPage} class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
-      ➡️ Go to Data Page
+    <button onclick={goToEventPage} class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
+      ➡️ Go to Event Page
     </button>
   </div>
 
@@ -140,5 +141,5 @@
     </button>
   </div>
 
-  <div bind:this={chartsContainer} class="w-full max-w-6xl mt-10 space-y-8"></div>
-</div>  
+  <div bind:this={chartsContainer} class="w-full max-w-4xl mt-10 space-y-6"></div>
+</div>
