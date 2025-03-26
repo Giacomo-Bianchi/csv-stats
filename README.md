@@ -44,3 +44,6 @@ npm i
 # e poi 
 npm run dev
 ```
+```
+node server.js
+```
