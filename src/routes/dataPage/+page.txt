@@ -1,33 +1,28 @@
-<!-- <script>
-  import { onMount } from 'svelte';
+<script>
   import Chart from 'chart.js/auto';
-
   import { goto } from '$app/navigation';
   import { dataPageCsvDataStore, dataPageChartsStore } from '$lib/store';
+  import { onDestroy, onMount } from 'svelte';
 
   let csvData = [];
   let charts = [];
   let chartsContainer;
   let maintainAspectRatio = true;
 
-  onMount(async () => {
-    if (typeof window !== 'undefined') {
-      const zoomPlugin = (await import('chartjs-plugin-zoom')).default;
-      Chart.register(zoomPlugin);
+  dataPageCsvDataStore.subscribe(value => {
+    csvData = value;
+    //console.log('CSV Data:', csvData);
+  });
 
-      dataPageCsvDataStore.subscribe(value => {
-        csvData = value;
-      });
+  dataPageChartsStore.subscribe(value => {
+    charts = value;
+  });
 
-      dataPageChartsStore.subscribe(value => {
-        charts = value;
-      });
-
-      if (csvData.length > 0) {
-        restoreCharts();
-      } else {
-        await fetchDataFromJson();
-      }
+  onMount(() => {
+    if (csvData.length > 0) {
+      restoreCharts();
+    } else {
+      fetchDataFromJson();
     }
   });
 
@@ -39,11 +34,29 @@
         csvData = parseCSV(data.csvData);
         dataPageCsvDataStore.set(csvData);
       } else {
-        console.error('Error fetching data');
+        console.error('Errore nel recupero dei dati');
       }
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error('Errore nella richiesta:', error);
     }
+  }
+
+  function parseCSV(csvString) {
+    const lines = csvString.split('\n').filter(line => line.trim() !== '');
+    const headers = lines[0].split(',');
+    const data = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',');
+      if (values.length === headers.length) {
+        const row = {};
+        for (let j = 0; j < headers.length; j++) {
+          row[headers[j]] = values[j];
+        }
+        data.push(row);
+      }
+    }
+    return data;
   }
 
   function restoreCharts() {
@@ -53,8 +66,6 @@
   }
 
   function createCharts() {
-    if (typeof window === 'undefined') return;
-
     if (charts.length > 0) {
       charts.forEach(chart => chart.destroy());
       charts = [];
@@ -68,13 +79,16 @@
     }
 
     const headers = Object.keys(csvData[0]);
-    const step = Math.max(1, Math.ceil(csvData.length / 100000));
+    console.log('Headers:', headers);
+    const step = Math.ceil(csvData.length / 10);
     const reducedCsvData = csvData.filter((_, index) => index % step === 0);
     const timeLabels = reducedCsvData.map(row => row.time);
+    console.log('Time Labels:', timeLabels);
 
     for (let i = 1; i < headers.length; i++) {
       const header = headers[i];
       const values = reducedCsvData.map(row => parseFloat(row[header]));
+      console.log(`Values for ${header}:`, values);
 
       const chartCard = document.createElement('div');
       chartCard.className = 'bg-white p-6 rounded-2xl shadow-lg mb-6';
@@ -97,7 +111,6 @@
           }]
         },
         options: {
-          parsing: false,
           responsive: true,
           maintainAspectRatio: maintainAspectRatio,
           scales: {
@@ -108,12 +121,10 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { font: { weight: 'bold' }, color: '#333' }
-            },
-            decimation: { enabled: true, algorithm: 'lttb', samples: 1000 },
-            zoom: {
-              pan: { enabled: true, mode: 'x' },
-              zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+              labels: {
+                font: { weight: 'bold' },
+                color: '#333'
+              }
             }
           }
         }
@@ -145,24 +156,13 @@
   function loadCharts() {
     createCharts();
   }
+
+  onDestroy(() => {
+    charts.forEach(chart => chart.destroy());
+  });
 </script>
 
-<style>
-  .charts-wrapper {
-    overflow-x: auto;
-    white-space: nowrap;
-    width: 100%;
-  }
-  
-  .charts-wrapper > div {
-    display: inline-block;
-    min-width: 800px;
-  }
-</style>
-
 <div class="min-h-screen bg-gradient-to-br from-blue-300 to-green-200 flex flex-col items-center py-12 px-6">
-
-
   <div class="w-full flex justify-end mb-6">
     <button onclick={toggleAspectRatio} class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-xl shadow-md transition duration-200">
       🔄 Toggle Aspect Ratio
@@ -174,7 +174,7 @@
     <button onclick={goToMainPage} class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
       ⬅️ Back to Main Page
     </button>
-    <button onclick={goToEventPage} class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
+    <button onclick={goToEventPage} class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105">
       ➡️ Go to Event Page
     </button>
   </div>
@@ -186,328 +186,4 @@
   </div>
 
   <div bind:this={chartsContainer} class="w-full max-w-4xl mt-10 space-y-6"></div>
-</div> -->
-
-
-<script>
-  import { onMount } from 'svelte';
-  import Chart from 'chart.js/auto';
-  import { goto } from '$app/navigation';
-  import { dataPageCsvDataStore, dataPageChartsStore } from '$lib/store';
-  import { parseCSV } from '$lib/utils';
-
-  let csvData = [];
-  let charts = [];
-  let chartsContainer;
-  let maintainAspectRatio = true;
-  let availableDates = [];
-  let selectedDate = null;
-
-  onMount(async () => {
-    if (typeof window !== 'undefined') {
-      const zoomPlugin = (await import('chartjs-plugin-zoom')).default;
-      Chart.register(zoomPlugin);
-
-      dataPageCsvDataStore.subscribe(value => {
-        csvData = value;
-      });
-
-      dataPageChartsStore.subscribe(value => {
-        charts = value;
-      });
-
-      if (csvData.length > 0) {
-        extractDates();
-        setInitialDate();
-        //restoreCharts();
-      } else {
-        await fetchDataFromJson();
-      }
-    }
-  });
-
-  async function fetchDataFromJson() {
-    try {
-      const response = await fetch('http://localhost:3000/api/data');
-      if (response.ok) {
-        const data = await response.json();
-        csvData = parseCSV(data.csvData);
-        dataPageCsvDataStore.set(csvData);
-        extractDates();
-        setInitialDate();
-      } else {
-        console.error('Error fetching data');
-      }
-    } catch (error) {
-      console.error('Fetch error:', error);
-    }
-  }
-
-  function extractDates() {
-    const uniqueDates = new Set(csvData.map(row => row.time.split('-')[0]));
-    availableDates = Array.from(uniqueDates).sort();
-  }
-
-  function setInitialDate() {
-    if (availableDates.length > 0) {
-      selectedDate = availableDates[0];
-      //createCharts();
-    }
-  }
-
-  function changeDate(direction) {
-    const currentIndex = availableDates.indexOf(selectedDate);
-    if (direction === 'prev' && currentIndex > 0) {
-      selectedDate = availableDates[currentIndex - 1];
-    } else if (direction === 'next' && currentIndex < availableDates.length - 1) {
-      selectedDate = availableDates[currentIndex + 1];
-    }
-    //createCharts();
-  }
-
-/*   function createCharts() {
-    if (typeof window === 'undefined') return;
-
-    if (charts.length > 0) {
-      charts.forEach(chart => chart.destroy());
-      charts = [];
-    }
-
-    chartsContainer.innerHTML = '';
-
-    if (csvData.length === 0) {
-      console.log('No CSV data available');
-      return;
-    }
-
-    const filteredData = csvData.filter(row => row.time.startsWith(selectedDate));
-    const headers = Object.keys(filteredData[0]);
-    const timeLabels = filteredData.map(row => row.time);
-    
-    for (let i = 1; i < headers.length; i++) {
-      const header = headers[i];
-      const values = filteredData.map(row => parseFloat(row[header]));
-
-      const chartCard = document.createElement('div');
-      chartCard.className = 'bg-white p-6 rounded-2xl shadow-lg mb-6';
-
-      const chartCanvas = document.createElement('canvas');
-      chartCard.appendChild(chartCanvas);
-      chartsContainer.appendChild(chartCard);
-
-      const chart = new Chart(chartCanvas, {
-        type: 'line',
-        data: {
-          labels: timeLabels,
-          datasets: [{
-            label: header,
-            data: values,
-            borderColor: getRandomColor(),
-            backgroundColor: 'rgba(0, 123, 255, 0.2)',
-            fill: true,
-            borderWidth: 2
-          }]
-        },
-        options: {
-          parsing: false,
-          responsive: true,
-          maintainAspectRatio: maintainAspectRatio,
-          scales: {
-            x: { title: { display: true, text: 'Time', font: { weight: 'bold' } } },
-            y: { title: { display: true, text: header, font: { weight: 'bold' } } }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-              labels: { font: { weight: 'bold' }, color: '#333' }
-            },
-            zoom: {
-              pan: { enabled: true, mode: 'x' },
-              zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
-            }
-          }
-        }
-      });
-
-      charts.push(chart);
-    }
-
-    dataPageChartsStore.set(charts);
-  } */
-
-  function createCharts() {
-  if (typeof window === 'undefined') return;
-
-  if (charts.length > 0) {
-    charts.forEach(chart => chart.destroy());
-    charts = [];
-  }
-
-  chartsContainer.innerHTML = '';
-
-  if (csvData.length === 0) {
-    console.log('No CSV data available');
-    return;
-  }
-
-  // Filtra i dati in base alla data selezionata
-  const filteredData = csvData.filter(row => row.time.startsWith(selectedDate));
-  if (filteredData.length === 0) {
-    console.log('No data available for the selected date');
-    return;
-  }
-  // console.log('Filtered data:', filteredData);
-
-  const headers = Object.keys(filteredData[0]);
-  const timeLabels = filteredData.map(row => row.time);
-
-  for (let i = 1; i < headers.length; i++) {
-    const header = headers[i];
-    const values = filteredData.map(row => {
-      const value = row[header];
-      return parseFloat(value.replace('\r', '').trim()) || 0; // Rimuove \r e converte in numero
-    });
-
-    //console.log(`Values for ${header}:`, values); // Debug per verificare i valori
-
-    const chartCard = document.createElement('div');
-    chartCard.className = 'bg-white p-6 rounded-2xl shadow-lg mb-6';
-
-    const chartCanvas = document.createElement('canvas');
-    chartCard.appendChild(chartCanvas);
-    chartsContainer.appendChild(chartCard);
-
-    const chart = new Chart(chartCanvas, {
-      type: 'line',
-      data: {
-        labels: timeLabels,
-        datasets: [{
-          label: header,
-          data: values,
-          borderColor: getRandomColor(),
-          backgroundColor: 'rgba(0, 123, 255, 0.2)',
-          fill: true,
-          borderWidth: 2
-        }]
-      },
-      options: {
-        parsing: false,
-        responsive: true,
-        maintainAspectRatio: maintainAspectRatio,
-        scales: {
-          x: {
-            title: { display: true, text: 'Time', font: { weight: 'bold' } }
-          },
-          y: {
-            title: { display: true, text: header, font: { weight: 'bold' } },
-            min: Math.min(...values) - 10, // Aggiungi un margine inferiore
-            max: Math.max(...values) + 10  // Aggiungi un margine superiore
-          }
-        },
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: { font: { weight: 'bold' }, color: '#333' }
-          },
-          zoom: {
-            pan: { enabled: true, mode: 'x' },
-            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
-          }
-        }
-      }
-    });
-
-    charts.push(chart);
-    console.log(`Chart for ${header} created CHART:`, chart); // Debug per verificare i grafici creati
-  
-  }
-
-  dataPageChartsStore.set(charts);
-}
-
-  function getRandomColor() {
-    return `hsl(${Math.random() * 360}, 100%, 60%)`;
-  }
-
-  function toggleAspectRatio() {
-    maintainAspectRatio = !maintainAspectRatio;
-    createCharts();
-  }
-
-  function goToMainPage() {
-    goto('/');
-  }
-
-  function goToEventPage() {
-    goto('/eventPage');
-  }
-</script>
-
-<style>
-  .charts-wrapper {
-    overflow-x: auto;
-    white-space: nowrap;
-    width: 100%;
-  }
-  
-  .charts-wrapper > div {
-    display: inline-block;
-    min-width: 800px;
-  }
-</style>
-
-<div class="min-h-screen bg-gradient-to-br from-blue-400 to-green-300 flex flex-col items-center py-12 px-6 space-y-8">
-  <h1 class="text-5xl font-extrabold text-gray-900 drop-shadow-lg">📊 Data CSV & Graphs</h1>
-
-  <!-- Container superiore con il selettore della data -->
-  <div class="w-full max-w-4xl bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-6">
-    <div class="w-full flex justify-between items-center">
-      <button 
-        onclick={toggleAspectRatio} 
-        class="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-6 rounded-xl shadow-md transition duration-200">
-        🔄 Toggle Aspect Ratio
-      </button>
-      
-      <div class="flex items-center space-x-6">
-        <button onclick={() => changeDate('prev')} 
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition transform hover:scale-110">
-          ⬅️ Next Day
-        </button>
-        
-        <span class="text-3xl font-bold text-gray-900 px-4 py-2 bg-gray-100 rounded-lg shadow-inner">
-          {selectedDate}
-        </span>
-        
-        <button onclick={() => changeDate('next')} 
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition transform hover:scale-110">
-          ➡️ Previous Day
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Navigazione tra le pagine -->
-  <div class="w-full max-w-2xl bg-white p-6 rounded-2xl shadow-lg flex justify-center space-x-6">
-    <button onclick={goToMainPage} 
-      class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition transform hover:scale-110">
-      ⬅️ Back to Main Page
-    </button>
-    <button onclick={goToEventPage} 
-      class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition transform hover:scale-110">
-      ➡️ Go to Event Page
-    </button>
-  </div>
-
-  <!-- Bottone per caricare i grafici -->
-  <div>
-    <button onclick={createCharts} 
-      class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-xl shadow-lg transition transform hover:scale-110">
-      📊 Load Charts
-    </button>
-  </div>
-
-  <!-- Contenitore dei grafici -->
-  <div bind:this={chartsContainer} class="w-full max-w-5xl mt-10 space-y-6"></div>
 </div>
