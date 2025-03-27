@@ -1,11 +1,12 @@
 <script>
   import { onMount } from 'svelte';
+  import { parseCSV } from '$lib/utils';
   import { dataPageCsvDataStore, eventPageCsvDataStore } from '$lib/store';
   import { goto } from '$app/navigation';
 
   let dataCsv = [];
   let eventCsv = [];
-  let email = 'giovanenobile@gmail.com';
+  let email = '';
 
   dataPageCsvDataStore.subscribe(value => {
     dataCsv = value;
@@ -33,28 +34,10 @@
     }
   }
 
-  function parseCSV(text) {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    const headers = lines[0].split(',');
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',');
-      if (values.length === headers.length) {
-        const row = {};
-        for (let j = 0; j < headers.length; j++) {
-          row[headers[j]] = values[j];
-        }
-        data.push(row);
-      }
-    }
-    return data;
-  }
-
   async function saveOnServer() {
     try {
-      const dataHeaders = 'time,acc_X,acc_Y,acc_Z,gyro_X,gyro_Y,gyro_Z,mag_X,mag_Y,mag_Z,temperature,pressure,VOC,CO2,Humidity';
-      const eventHeaders = 'time,acc_X,acc_Y,acc_Z,gyro_X,gyro_Y,gyro_Z';
+      const dataHeaders = 'time,accelerometer X,accelerometer Y,accelerometer Z,gyroscope X,gyroscope Y,gyroscope Z,magnetometer X,magnetometer Y,magnetometer Z,temperature,pressure,VOC,CO2,Humidity';
+      const eventHeaders = 'time,accelerometer X,accelerometer Y,accelerometer Z,gyroscope X,gyroscope Y,gyroscope Z';
 
       const dataCsvString = [dataHeaders, ...dataCsv.map(row => Object.values(row).join(','))].join('\n');
       const eventCsvString = [eventHeaders, ...eventCsv.map(row => Object.values(row).join(','))].join('\n');
@@ -110,10 +93,9 @@
     }
     dataPageCsvDataStore.set(dataCsv);
     eventPageCsvDataStore.set(eventCsv);
-    //alert('Data saved successfully');
     saveOnServer();
   }
-  
+
   async function downloadCSV(type) {
     try {
       const response = await fetch(`http://localhost:3000/api/download/${type}`);
@@ -143,6 +125,14 @@
   function navigateToEventPage() {
     goto('/eventPage');
   }
+
+  function resetData() {
+    dataCsv = [];
+    eventCsv = [];
+    dataPageCsvDataStore.set([]);
+    eventPageCsvDataStore.set([]);
+    alert('All data has been reset.');
+  }
 </script>
 
 <div class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-300 to-purple-400 p-6">
@@ -165,7 +155,7 @@
     </div>
     <div class="mt-6 flex flex-wrap justify-center gap-4">
       <button onclick={navigateToDataPage} class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition transform hover:scale-105">📊 Data Page</button>
-      <button onclick={navigateToEventPage} class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition transform hover:scale-105">📅 Event Page</button>
+      <button onclick={navigateToEventPage} class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition transform hover:scale-105">📅 Event Page</button>
     </div>
   </div>
   
@@ -176,5 +166,12 @@
       <button onclick={() => downloadCSV('event')} class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition transform hover:scale-105">Download Event CSV</button>
     </div>
   </div>
-</div>
 
+  <div class="bg-white shadow-2xl rounded-2xl p-5 w-full max-w-lg text-center border border-gray-300 mt-8">
+    <h2 class="text-2xl font-extrabold text-gray-900 mb-6"> ⚠️ Reset All Data ⚠️ </h2>
+    <button onclick={resetData} class="bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl">
+      🚨 Reset All Data ❗
+    </button>
+  </div>
+  
+</div>
