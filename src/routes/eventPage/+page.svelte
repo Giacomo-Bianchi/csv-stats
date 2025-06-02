@@ -19,7 +19,9 @@
         charts = value;
     });
 
-    onMount(() => {
+    onMount(async () => {
+        const zoomPlugin = (await import('chartjs-plugin-zoom')).default;
+        Chart.register(zoomPlugin);
         if (csvData.length > 0) {
             extractDates();
             setInitialDate();
@@ -118,10 +120,9 @@
                         y: { title: { display: true, text: header, font: { weight: 'bold' } } }
                     },
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: { font: { weight: 'bold' }, color: '#333' }
+                        zoom: {
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
                         }
                     }
                 }

@@ -396,7 +396,7 @@
           🔄 Toggle Aspect Ratio
       </button>
   </div>
-  <h1 class="text-4xl font-extrabold text-gray-900 mb-8">📊 Event CSV & Graphs</h1>
+  <h1 class="text-4xl font-extrabold text-gray-900 mb-8">📊 Data CSV & Graphs</h1>
   <div class="flex items-center space-x-6 mb-6">
       <button onclick={() => changeDate('prev')} class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition transform hover:scale-110">
           ⬅️ Previous Day
